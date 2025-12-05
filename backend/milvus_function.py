@@ -1,9 +1,3 @@
-"""
-Phase 1: 문서 로딩 및 인덱싱 (txtai → Milvus - 벡터 처리 수정)
-- 역할: ./data 폴더의 모든 문서를 txtai로 벡터화 → Milvus에 저장
-- 수정: numpy array 처리 및 벡터 검증 강화
-"""
-
 import os
 import glob
 from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
@@ -17,6 +11,7 @@ DATA_DIR = "./data"
 MILVUS_HOST = "127.0.0.1"
 MILVUS_PORT = "19530"
 COLLECTION_NAME = "study_docs"
+ALLOWED_EXT=["pdf","doc","docx","ppt","pptx","txt","md","html"]
 
 # txtai 설정 (벡터 생성 엔진)
 EMBEDDINGS_CONFIG = {
@@ -53,8 +48,13 @@ def setup_milvus_collection(embed_dim: int = 384):
     
     # 기존 컬렉션 확인
     if COLLECTION_NAME in utility.list_collections():
-        print(f"[MILVUS] Collection '{COLLECTION_NAME}' already exists. Dropping...")
-        utility.drop_collection(COLLECTION_NAME)
+        print(f"[MILVUS] Collection '{COLLECTION_NAME}' already exists.")
+        collection = Collection(COLLECTION_NAME)
+        collection.load()
+        return collection
+    
+    # 새로 생성
+    print(f"[MILVUS] Collection '{COLLECTION_NAME}' not found → creating new one.")
     
     # 스키마 정의
     fields = [
@@ -120,31 +120,50 @@ def extract_text(path: str) -> str:
         return ""
 
 def load_all_documents(root_dir: str):
-    """./data 폴더의 모든 문서 로드"""
     print(f"\n[LOAD] Scanning {root_dir}...")
-    
-    documents = []
-    patterns = ["**/*.pdf", "**/*.docx", "**/*.doc", "**/*.pptx", "**/*.ppt", "**/*.txt"]
-    
+
+    # 1) Milvus 컬렉션 Load 보장 (중복 방지 확실하게)
+    col = Collection(COLLECTION_NAME)
+    col.load()
+
+    try:
+        existing = col.query(
+            expr="id >= 0",
+            output_fields=["filename", "path"]
+        )
+        existing_files = {(x["filename"], x["path"]) for x in existing}
+
+    except:
+        existing_files = set()
+
+    documents=[]
+    patterns=ALLOWED_EXT
+
     for pattern in patterns:
         for file_path in glob.glob(os.path.join(root_dir, pattern), recursive=True):
+            filename = os.path.basename(file_path)
+
+            # 🔥 filename + path 모두 검증하여 중복 방지
+            if (filename, file_path) in existing_files:
+                print(f"  [SKIP] Already indexed → {filename}")
+                continue
+
             text = extract_text(file_path)
-            
-            if text and text.strip():
-                filename = os.path.basename(file_path)
-                doc_type = os.path.splitext(filename)[1][1:]
-                
-                documents.append({
-                    "path": file_path,
-                    "filename": filename,
-                    "text": text,
-                    "doc_type": doc_type
-                })
-                
-                print(f"  [LOAD] {filename} ({len(text)} chars)")
-    
-    print(f"[INFO] Total documents loaded: {len(documents)}")
+            if not text.strip(): 
+                continue
+
+            documents.append({
+                "path": file_path,
+                "filename": filename,
+                "text": text,
+                "doc_type": os.path.splitext(filename)[1][1:]
+            })
+
+            print(f"  [LOAD] NEW FILE → {filename} ({len(text)} chars)")
+
+    print(f"[INFO] New documents loaded: {len(documents)}")
     return documents
+
 
 # =============================================================================
 # 4. ✅ numpy array 처리 수정 - txtai 벡터화 및 Milvus 저장
@@ -270,95 +289,64 @@ def show_collection_stats(collection):
     print(f"  - Total entities: {collection.num_entities}")
     print(f"  - Schema fields: {[field.name for field in collection.schema.fields]}")
 
-# =============================================================================
-# 6. 테스트 검색
-# =============================================================================
-def test_search(embeddings: Embeddings, collection: Collection, query: str, top_k: int = 3):
-    """테스트 검색 (txtai로 쿼리 벡터화)"""
-    print(f"\n[TEST_SEARCH] Query: '{query}'")
-    
-    try:
-        # ✅ txtai.transform()으로 쿼리 벡터화
-        print("[TEST_SEARCH] Vectorizing query via txtai.transform()...")
-        
-        qvec = embeddings.transform(query)
-        
-        print(f"[TEST_SEARCH] Query vector type: {type(qvec)}")
-        
-        # ✅ numpy array 변환
-        if isinstance(qvec, np.ndarray):
-            qvec = qvec.tolist()
-            print(f"[TEST_SEARCH] Converted numpy array to list")
-        
-        if not isinstance(qvec, list):
-            qvec = list(qvec)
-        
-        print(f"[TEST_SEARCH] Query vector created via txtai: dimension={len(qvec)}")
-        
-        # Milvus에서 검색
-        search_params = {"metric_type": "IP", "params": {"nprobe": 16}}
-        results = collection.search(
-            data=[qvec],
-            anns_field="vector",
-            param=search_params,
-            limit=top_k,
-            output_fields=["text", "path", "filename"]
-        )
-        
-        print(f"[TEST_SEARCH] Top {top_k} results:")
-        if results and len(results) > 0 and len(results[0]) > 0:
-            for i, hit in enumerate(results[0], 1):
-                entity = hit.entity
-                print(f"\n  {i}. Score: {hit.score:.4f}")
-                print(f"     File: {entity.get('filename')}")
-                print(f"     Path: {entity.get('path')}")
-                text_preview = entity.get('text', '')[:150].replace('\n', ' ')
-                print(f"     Preview: {text_preview}...")
-        else:
-            print("  No results found (collection might be empty)")
-    
-    except Exception as e:
-        print(f"[WARN] Test search failed: {e}")
-        import traceback
-        traceback.print_exc()
 
-# =============================================================================
-# Main 실행
-# =============================================================================
-if __name__ == "__main__":
-    print("=" * 80)
-    print("PHASE 1: Document Indexing (txtai → Milvus)")
-    print("=" * 80)
-    print("\n🎯 플로우: txtai 벡터화 → Milvus 저장소")
-    print("=" * 80)
-    
+
+# ============================================================
+# 🔥 Milvus Collection 삭제 함수 - 주의!!!!
+# ============================================================
+def drop_milvus_collection_and_count():
     try:
-        # 1. txtai 초기화 (벡터 생성 엔진)
-        embeddings = initialize_embeddings()
+        if COLLECTION_NAME in utility.list_collections():
+
+            col = Collection(COLLECTION_NAME)
+            count = col.num_entities  # 삭제 전 문서 수 확인
+
+            utility.drop_collection(COLLECTION_NAME)
+            print(f"🗑 Collection '{COLLECTION_NAME}' removed → {count} docs deleted")
+
+            setup_milvus_collection(embed_dim=EMBED_DIM)
+            print("📌 New empty collection initialized.")
+
+            return count  # ← 삭제된 문서 수 반환
         
-        # 2. Milvus 연결 및 컬렉션 설정 (저장소)
-        connect_milvus()
-        collection = setup_milvus_collection(embed_dim=EMBED_DIM)
-        
-        # 3. 문서 로드
-        documents = load_all_documents(DATA_DIR)
-        
-        if documents:
-            # 4. ✅ txtai로 벡터화 → Milvus에 저장
-            vectorize_and_index_via_txtai(embeddings, collection, documents)
-            
-            # 5. 통계
-            show_collection_stats(collection)
-            
-            # 6. 테스트 검색 (txtai로 쿼리 벡터화)
-            test_search(embeddings, collection, "딥러닝", top_k=3)
-        
-        print("\n" + "=" * 80)
-        print("✅ Phase 1 완료: txtai 벡터 → Milvus 저장됨")
-        print("=" * 80)
-        print(f"\n다음 단계: python phase2_search_api.py 실행")
-    
+        else:
+            print("⚠ No collection found. Nothing deleted.")
+            return 0
+
     except Exception as e:
-        print(f"\n❌ 에러 발생: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Error during clear: {e}")
+        return 0
+
+# ============================================================
+# 🔥 파일명 기반 삭제 (문서개수/삭제된 ID 반환)
+# ============================================================
+def delete_document_by_filename(filename: str):
+    try:
+        col = Collection(COLLECTION_NAME)
+        col.load()
+
+        # filename 일치하는 데이터 조회
+        matches = col.query(expr=f'filename == "{filename}"', output_fields=["id"])
+        if not matches:
+            print(f"⚠ No document found: {filename}")
+            return 0, []
+
+        ids = [m["id"] for m in matches]
+
+        # 실제 DB 삭제
+        col.delete(expr=f'id in {ids}')
+        col.flush()
+        print(f"🗑 Deleted {len(ids)} vectors from '{filename}'")
+
+        # 로컬 파일도 제거
+        local_path = f"./data/{filename}"
+        if os.path.exists(local_path):
+            os.remove(local_path)
+            print(f"🗂 Local file removed: {local_path}")
+
+        return len(ids), ids  # 삭제된 문서수 + ID 목록 반환
+
+    except Exception as e:
+        print(f"❌ Delete operation failed: {e}")
+        return 0, []
+
