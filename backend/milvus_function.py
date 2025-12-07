@@ -140,7 +140,7 @@ def load_all_documents(root_dir: str):
     patterns=ALLOWED_EXT
 
     for pattern in patterns:
-        for file_path in glob.glob(os.path.join(root_dir, pattern), recursive=True):
+        for file_path in glob.glob(os.path.join(root_dir, f"*.{pattern}"), recursive=True):
             filename = os.path.basename(file_path)
 
             # 🔥 filename + path 모두 검증하여 중복 방지
