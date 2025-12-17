@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from .db import Base
 
-
+# PostgresDB 
 class Document(Base):
     __tablename__ = "documents"
 
@@ -12,8 +12,9 @@ class Document(Base):
     title = Column(String(512), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    session_id = Column(String, index=True, default="default")
 
-
+# 이건 chorma?
 class SearchLog(Base):
     __tablename__ = "search_logs"
 
