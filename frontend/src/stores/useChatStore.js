@@ -16,7 +16,7 @@ export const useChatStore = create(
     createNewChat: () => {
       const newChat = {
         id: Date.now(), // 고유 ID 생성 (간단히 타임스탬프 사용)
-        title: `새로운 탐사 ${new Date().toLocaleTimeString()}`, // 기본 제목
+        title: `Exploration ${new Date().toLocaleTimeString()}`, // 기본 제목
         messages: [], // 빈 메시지 배열
       };
 
@@ -112,7 +112,7 @@ export const useChatStore = create(
 
         if (response.ok) {
           alert(
-            `${files.length}개의 별(파일)을 성공적으로 쏘아 올렸습니다!`
+            `${files.length} star(s) launched successfully!`
           );
           // 업로드 후 인덱싱 요청 (세션 ID 포함)
           await fetch(
@@ -121,11 +121,11 @@ export const useChatStore = create(
           // 문서 목록 갱신 (await 추가하여 상태 업데이트 보장)
           await get().fetchDocuments(chatId);
         } else {
-          alert("파일 업로드 실패");
+          alert("File upload failed");
         }
       } catch (error) {
         console.error(error);
-        alert("서버 연결 오류");
+        alert("Server connection error");
       } finally {
         set({ isLoading: false });
       }
@@ -173,7 +173,7 @@ export const useChatStore = create(
       } catch (error) {
         console.error(error);
         set({ isLoading: false });
-        alert("답변을 받아오는데 실패했습니다.");
+        alert("Failed to receive an answer.");
       }
     },
 
@@ -211,7 +211,7 @@ export const useChatStore = create(
         if (newChats.length === 0) {
           const newChat = {
             id: Date.now(),
-            title: `새로운 탐사 ${new Date().toLocaleTimeString()}`,
+            title: `New exploration ${new Date().toLocaleTimeString()}`,
             messages: [],
           };
           return {
@@ -254,7 +254,7 @@ export const useChatStore = create(
       // 모든 채팅 삭제 후 새 채팅 하나 생성
       const newChat = {
         id: Date.now(),
-        title: `새로운 탐사 ${new Date().toLocaleTimeString()}`,
+        title: `Exploration ${new Date().toLocaleTimeString()}`,
         messages: [],
       };
 

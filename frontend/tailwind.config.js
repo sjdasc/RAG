@@ -8,15 +8,30 @@ export default {
     extend: {
       colors: {
         space: {
-          dark: "#0F172A", // 깊은 우주색
-          light: "#1E293B", // 약간 밝은 우주색 (카드 등)
-          accent: "#8B5CF6", // 보라색 강조 (Nebula)
-          text: "#E2E8F0", // 별빛 텍스트
+          dark: "#000000", // Pure Black
+          light: "#111111", // Dark Gray for cards/sidebars
+          accent: "#FFFFFF", // White for accents/buttons
+          text: "#EDEDED", // Off-white for text
+          border: "#333333", // Subtle border
         },
       },
       backgroundImage: {
-        "space-gradient":
-          "radial-gradient(circle at center, #1E293B 0%, #0F172A 100%)",
+        "space-gradient": "none", // Remove gradient
+      },
+      keyframes: {
+        "fade-in-up": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(10px)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+        },
+      },
+      animation: {
+        "fade-in-up": "fade-in-up 0.5s ease-out",
       },
     },
   },

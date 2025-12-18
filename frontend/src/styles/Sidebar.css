@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .sidebar-container {
+    @apply w-64 h-screen bg-black border-r flex flex-col p-4 relative z-20;
+    border-color: var(--space-border);
+  }
+
+  .sidebar-logo {
+    @apply flex items-center gap-2 mb-8 text-xl font-bold text-white hover:text-gray-300 transition-colors;
+  }
+
+  .sidebar-new-chat-btn {
+    @apply flex items-center gap-2 p-3 mb-6 bg-white text-black rounded-lg hover:bg-gray-200 transition-all cursor-pointer;
+  }
+
+  .sidebar-history-title {
+    @apply text-xs font-mono text-gray-500 mb-2 px-2 uppercase tracking-wider;
+  }
+
+  .sidebar-history-empty {
+    @apply text-sm text-gray-600 text-center py-4;
+  }
+
+  .sidebar-history-item {
+    @apply flex items-center justify-between p-3 rounded-md cursor-pointer transition-colors text-sm mb-1 text-gray-400 hover:text-white;
+
+    background-color: var(--space-light);
+  }
+
+  .sidebar-history-item-active {
+    @apply flex items-center justify-between p-3 rounded-md cursor-pointer transition-colors text-sm mb-1 text-white border;
+    background-color: var(--space-light);
+    border-color: var(--space-border);
+  }
+
+  .sidebar-delete-btn {
+    @apply opacity-0 group-hover:opacity-100 p-1 hover:text-white transition-all;
+  }
+
+  .sidebar-delete-all-btn {
+    @apply flex items-center gap-2 w-full p-2 text-sm text-gray-400 hover:text-white hover:bg-gray-900 rounded-md transition-colors;
+  }
+
+  .sidebar-user-info {
+    @apply text-xs text-gray-500 mt-4 text-center;
+  }
+}

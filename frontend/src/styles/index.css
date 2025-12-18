@@ -2,14 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --space-dark: #000000;
+  --space-light: #111111;
+  --space-accent: #ffffff;
+  --space-text: #ededed;
+  --space-border: #333333;
+}
+
 body {
   @apply bg-space-dark text-space-text overflow-hidden;
-  /* 전체적인 우주 배경 느낌 */
-  background: radial-gradient(
-    ellipse at bottom,
-    #1b2735 0%,
-    #090a0f 100%
-  );
+  background-color: #000000;
 }
 
 /* 커스텀 스크롤바 (선택사항) */
@@ -17,9 +20,9 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #8b5cf6;
+  background: #333333;
   border-radius: 4px;
 }

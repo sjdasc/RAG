@@ -17,6 +17,7 @@ import {
 } from "@react-three/drei";
 import { useNavigate } from "react-router-dom";
 import { useChatStore } from "../../stores/useChatStore"; // Store import
+import "../../styles/GalaxyView.css";
 
 // 개별 별(데이터 포인트) 컴포넌트
 const StarNode = ({
@@ -78,17 +79,17 @@ const StarNode = ({
       />
       {hovered && (
         <Html distanceFactor={10}>
-          <div className="bg-slate-900/90 text-base text-white p-4 rounded-lg border border-slate-500 whitespace-nowrap pointer-events-none z-50 min-w-[200px]">
-            <div className="font-bold mb-2 text-lg">
+          <div className="galaxy-tooltip">
+            <div className="galaxy-tooltip-title">
               {label}
             </div>
             {!isQuery && page && (
-              <div className="text-slate-300 mb-1">
+              <div className="galaxy-tooltip-page">
                 Page: {page}
               </div>
             )}
             {url && (
-              <div className="text-xs text-slate-400 mt-2">
+              <div className="galaxy-tooltip-hint">
                 (Click to open)
               </div>
             )}
@@ -140,36 +141,36 @@ const GalaxyView = () => {
   }, [currentChatId, currentResult]); // 의존성 배열 업데이트
 
   return (
-    <div className="w-full h-screen bg-black relative">
+    <div className="galaxy-container">
       <button
         onClick={() => navigate(-1)}
-        className="absolute top-6 left-6 z-50 bg-slate-800/50 hover:bg-slate-700 text-white px-4 py-2 rounded-full backdrop-blur-md border border-slate-600 transition-colors cursor-pointer"
+        className="galaxy-back-btn"
       >
-        ← 돌아가기
+        ← Back to Home
       </button>
 
-      <div className="absolute top-6 right-6 z-50 text-right space-y-2 pointer-events-none">
-        <div className="bg-space-accent/20 text-space-accent px-4 py-2 rounded-full backdrop-blur-md border border-space-accent/50 font-bold">
+      <div className="galaxy-legend-container">
+        <div className="galaxy-legend-title">
           Knowledge Galaxy View
         </div>
-        <div className="text-xs text-slate-300 bg-slate-900/80 p-3 rounded border border-slate-700 space-y-1 text-left">
-          <div className="flex items-center gap-2">
+        <div className="galaxy-legend-list">
+          <div className="galaxy-legend-item">
             <span className="w-3 h-3 rounded-full bg-[#FDE047]"></span>
             <span>Question (질문)</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="galaxy-legend-item">
             <span className="w-3 h-3 rounded-full bg-[#F43F5E]"></span>
             <span>PDF Document</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="galaxy-legend-item">
             <span className="w-3 h-3 rounded-full bg-[#06B6D4]"></span>
             <span>TXT / MD File</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="galaxy-legend-item">
             <span className="w-3 h-3 rounded-full bg-[#F97316]"></span>
             <span>PPT / PPTX Slide</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="galaxy-legend-item">
             <span className="w-3 h-3 rounded-full bg-[#8B5CF6]"></span>
             <span>Other Files</span>
           </div>
@@ -181,18 +182,18 @@ const GalaxyView = () => {
       >
         <color
           attach="background"
-          args={["#050810"]}
+          args={["#000000"]}
         />
         <ambientLight intensity={0.3} />
         <pointLight
           position={[10, 10, 10]}
           intensity={1.5}
-          color="#4c1d95"
+          color="#ffffff"
         />
         <pointLight
           position={[-10, -10, -10]}
           intensity={1.5}
-          color="#0e7490"
+          color="#ffffff"
         />
 
         <Stars

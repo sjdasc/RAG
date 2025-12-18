@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .galaxy-container {
+    @apply w-full h-screen bg-black relative;
+  }
+
+  .galaxy-back-btn {
+    @apply absolute top-6 left-6 z-50 bg-black hover:bg-gray-900 text-white px-4 py-2 rounded-full backdrop-blur-md border border-white transition-colors cursor-pointer;
+  }
+
+  .galaxy-legend-container {
+    @apply absolute top-6 right-6 z-50 text-right space-y-2 pointer-events-none;
+  }
+
+  .galaxy-legend-title {
+    @apply bg-white text-black px-4 py-2 rounded-full backdrop-blur-md border border-white font-bold;
+  }
+
+  .galaxy-legend-list {
+    @apply text-xs text-gray-300 bg-black p-3 rounded border border-white space-y-1 text-left;
+  }
+
+  .galaxy-legend-item {
+    @apply flex items-center gap-2;
+  }
+
+  .galaxy-tooltip {
+    @apply bg-black text-base text-white p-4 rounded-lg border border-white whitespace-nowrap pointer-events-none z-50 min-w-[200px];
+  }
+
+  .galaxy-tooltip-title {
+    @apply font-bold mb-2 text-lg;
+  }
+
+  .galaxy-tooltip-page {
+    @apply text-gray-300 mb-1;
+  }
+
+  .galaxy-tooltip-hint {
+    @apply text-xs text-gray-400 mt-2;
+  }
+}

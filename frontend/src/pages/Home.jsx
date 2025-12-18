@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { useChatStore } from "../stores/useChatStore";
 import { useNavigate } from "react-router-dom";
+import "../styles/stars.css";
+import "../styles/Home.css";
 
 const Home = () => {
   const [query, setQuery] = useState("");
@@ -59,23 +61,25 @@ const Home = () => {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="home-container">
+      <div className="stars-container">
+        <div className="stars-small"></div>
+        <div className="stars-medium"></div>
+        <div className="stars-large"></div>
+      </div>
       <Sidebar />
-      <main className="flex-1 flex flex-col items-center justify-center p-8 relative z-10">
-        {/* 배경 효과용 (실제로는 파티클 라이브러리 사용 추천) */}
-        <div className="absolute inset-0 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 animate-pulse"></div>
-
-        <div className="text-center max-w-2xl w-full space-y-8 animate-fade-in-up">
-          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-500">
-            지식의 우주를 탐험하세요
+      <main className="home-main">
+        <div className="home-content-wrapper">
+          <h1 className="home-title">
+            Explore the Galaxy of Knowledge
           </h1>
-          <p className="text-xl text-slate-400">
-            당신의 자료들을 별처럼 쏘아 올리고,
-            질문을 통해 해답을 찾아보세요.
+          <p className="home-subtitle">
+            Launch your materials like stars, and
+            find answers through questions.
           </p>
 
           {/* 파일 업로드 (Launch) 버튼 */}
-          <div className="mt-12">
+          <div className="home-upload-section">
             <input
               type="file"
               id="fileUpload"
@@ -85,38 +89,31 @@ const Home = () => {
             />
             <label
               htmlFor="fileUpload"
-              className={`
-                            flex items-center justify-center gap-3 mx-auto w-64 py-4 px-6 
-                            bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full 
-                            text-lg font-bold cursor-pointer 
-                            hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.6)] hover:-translate-y-1 transition-all
-                            ${
-                              isLoading
-                                ? "opacity-50 cursor-not-allowed"
-                                : ""
-                            }
-                        `}
+              className={`home-upload-label ${
+                isLoading
+                  ? "home-upload-label-loading"
+                  : ""
+              }`}
             >
               <UploadCloud size={24} />
               {isLoading
-                ? "발사 준비 중..."
-                : "지식 쏘아 올리기 (Launch)"}
+                ? "Ready to Launch..."
+                : "Launch Files"}
             </label>
-            <p className="text-sm text-slate-500 mt-3">
-              PDF, PPTX, DOCX 등 다양한 강의자료
-              지원
+            <p className="home-upload-helper-text">
+              Supports various lecture materials
+              such as PDF, PPTX, DOCX
             </p>
           </div>
 
           {/* 검색창 */}
           <form
             onSubmit={handleSearch}
-            className="relative w-full max-w-xl mx-auto group"
+            className="home-search-form group"
           >
-            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative flex items-center bg-space-light/80 backdrop-blur-xl border border-slate-700 rounded-2xl p-2 focus-within:border-space-accent transition-colors">
+            <div className="home-search-wrapper">
               <Search
-                className="ml-4 text-slate-400"
+                className="home-search-icon"
                 size={24}
               />
               <input
@@ -125,8 +122,8 @@ const Home = () => {
                 onChange={(e) =>
                   setQuery(e.target.value)
                 }
-                placeholder="무엇을 탐사하시겠습니까?"
-                className="w-full bg-transparent p-4 text-lg focus:outline-none text-space-text placeholder:text-slate-500"
+                placeholder="what do you want to ask?"
+                className="home-search-input"
                 disabled={isLoading}
               />
               <button
@@ -134,7 +131,7 @@ const Home = () => {
                 disabled={
                   isLoading || !query.trim()
                 }
-                className="bg-space-accent hover:bg-purple-700 text-white p-3 rounded-xl transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="home-search-button"
               >
                 <Sparkles size={24} />
               </button>
@@ -142,30 +139,30 @@ const Home = () => {
           </form>
 
           {/* 문서 목록 표시 (추가됨) */}
-          <div className="max-w-xl mx-auto mt-6">
-            <h3 className="text-slate-400 text-sm mb-2 text-left pl-2">
-              현재 탐사 중인 문서들:
+          <div className="home-docs-section">
+            <h3 className="home-docs-title">
+              Currently exploring documents:
             </h3>
             {documents.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="home-docs-list">
                 {documents.map((doc) => (
                   <div
                     key={doc.id}
-                    className="flex items-center gap-2 bg-slate-800/60 px-3 py-2 rounded-lg border border-slate-700 text-sm text-slate-300"
+                    className="home-doc-item"
                   >
                     <FileText
                       size={14}
-                      className="text-blue-400"
+                      className="home-doc-icon"
                     />
-                    <span className="truncate max-w-[150px]">
+                    <span className="home-doc-filename">
                       {doc.filename}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 text-sm pl-2">
-                아직 업로드된 문서가 없습니다.
+              <p className="home-docs-empty">
+                No documents found.
               </p>
             )}
           </div>
