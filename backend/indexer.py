@@ -25,7 +25,7 @@ def scan_files() -> List[str]:
     return sorted(set(files))
 
 
-def upsert_documents(db: Session, file_paths: List[str]) -> List[int]:
+def upsert_documents(db: Session, file_paths: List[str], session_id: str) -> List[int]:
     """
     1) PostgreSQL documents 테이블 upsert
     2) 같은 시점에 Chroma에도 저장
@@ -51,10 +51,11 @@ def upsert_documents(db: Session, file_paths: List[str]) -> List[int]:
         if existing:
             existing.title = title
             existing.content = full_content
+            existing.session_id = session_id  
             db.flush()
             doc_id = existing.id
         else:
-            doc = Document(path=path, title=title, content=full_content)
+            doc = Document(path=path, title=title, content=full_content, session_id=session_id )
             db.add(doc)
             db.flush()
             doc_id = doc.id
@@ -67,10 +68,13 @@ def upsert_documents(db: Session, file_paths: List[str]) -> List[int]:
         # Extract session_id from path (assuming data/{session_id}/{filename})
         rel_path = os.path.relpath(path, DATA_DIR)
         parts = rel_path.split(os.sep)
-        if len(parts) > 1:
-            session_id = parts[0]
-        else:
-            session_id = "default"
+        
+        # if len(parts) > 1:
+        #     session_id = parts[0]
+        # else:
+        #     session_id = "default"
+        
+        file_session_id = parts[0] if len(parts) > 1 else "default"
 
         for chunk in chunks:
             # ID format: {doc_id}_{page}
@@ -80,7 +84,8 @@ def upsert_documents(db: Session, file_paths: List[str]) -> List[int]:
                 "title": title,
                 "ext": ext,
                 "path": path,
-                "session_id": session_id,
+                # "session_id": session_id,
+                "session_id": file_session_id,
                 "page": chunk['page']
             })
 
@@ -96,7 +101,7 @@ def upsert_documents(db: Session, file_paths: List[str]) -> List[int]:
     return doc_ids
 
 
-def rebuild_index():
+def rebuild_index(session_id: str):
     print("[INDEX] Scanning files...")
     file_paths = scan_files()
     print(f"[INDEX] Found {len(file_paths)} files.")
@@ -112,7 +117,7 @@ def rebuild_index():
         chroma.clear_all()
 
         print("[INDEX] Upserting documents into PostgreSQL + Chroma...")
-        upsert_documents(db, file_paths)
+        upsert_documents(db, file_paths, session_id=session_id)
 
         print("[INDEX] Done.")
     finally:

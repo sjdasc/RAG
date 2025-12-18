@@ -255,10 +255,10 @@ def get_file(session_id: str, filename: str):
 # ======================================================
 @app.get("/reindex")
 def reindex(session_id: str = "default"):
-    rebuild_index()
+    rebuild_index(session_id)
     # global chroma
     # chroma = ChromaEngine()  # reload - No need, using shared instance
-    return {"status": "Success"}
+    return {"status": "Success", "session_id": session_id}
 
 
 # ======================================================

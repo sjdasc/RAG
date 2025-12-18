@@ -38,8 +38,12 @@ services:
     volumes:
       - ./backend/data:/app/data
       - ./backend/chroma_store:/app/chroma_store
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - oss_net
 
@@ -58,11 +62,16 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1 -p 5432"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     networks:
       - oss_net
 
   # =========================================
-  # DB Admin (pgAdmin)
+  # DB Admin (pgAdmin) - 서버(LocalPostgres) 자동 등록
   # =========================================
   pgadmin:
     image: dpage/pgadmin4:8.12
@@ -71,20 +80,87 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+
+      # 아래 2개는 "접속/설정 번거로움"을 줄이기 위한 옵션 (원하면 제거 가능)
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+
+      # servers.json을 매번 덮어써서(선언적) 서버 목록을 유지
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
     ports:
       - "5050:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    configs:
+      - source: pgadmin-pgpass
+        target: /config/pgpass
+        uid: "5050"
+        gid: "5050"
+        mode: 0400
+      - source: pgadmin-servers
+        target: /pgadmin4/servers.json
+        mode: 0444
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     networks:
       - oss_net
 
   # =========================================
-  # Visualization (Superset)
+  # Visualization (Superset) - DB 연결(LocalPostgres) 자동 생성
   # =========================================
   superset:
-    image: apache/superset:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile_superset
     container_name: oss_superset
     restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+
+        superset db upgrade
+
+        superset fab create-admin \
+          --username admin \
+          --firstname OSS \
+          --lastname Admin \
+          --email admin@example.com \
+          --password admin || true
+
+        superset init
+
+        # ✅ Superset에 Postgres 데이터소스(LocalPostgres) 자동 등록 (앱 컨텍스트 포함)
+        python - <<'PY'
+        try:
+            from superset.app import create_app
+        except Exception:
+            # 버전에 따라 경로가 다를 수 있어 fallback
+            from superset import app as superset_app
+            create_app = superset_app.create_app
+
+        app = create_app()
+        with app.app_context():
+            from superset import db
+            from superset.models.core import Database
+
+            name = "LocalPostgres"
+            uri  = "postgresql+psycopg2://ossuser:osspass@db:5432/ossdb"
+
+            obj = db.session.query(Database).filter_by(database_name=name).one_or_none()
+            if obj is None:
+                obj = Database(database_name=name)
+                db.session.add(obj)
+
+            obj.set_sqlalchemy_uri(uri)
+            obj.expose_in_sqllab = True
+            db.session.commit()
+            print("[OK] Superset Database upserted:", name)
+        PY
+
+        /usr/bin/run-server.sh
     environment:
       SUPERSET_SECRET_KEY: "supersecretkey"
       SUPERSET_LOAD_EXAMPLES: "no"
@@ -100,9 +176,36 @@ services:
     networks:
       - oss_net
 
+
+
 volumes:
   pgdata:
+  pgadmin_data:
+  superset_home:
 
 networks:
   oss_net:
     driver: bridge
+
+configs:
+  # pgAdmin: 자동 서버 등록 + 비밀번호 파일(pgpass) 사용
+  # servers.json + PassFile/pgpass 방식은 Docker 공식 가이드 예시를 그대로 따름
+  # (서버 정의 + PassFile) :contentReference[oaicite:1]{index=1}
+  pgadmin-servers:
+    content: |
+      {
+        "Servers": {
+          "1": {
+            "Name": "LocalPostgres",
+            "Group": "Servers",
+            "Host": "db",
+            "Port": 5432,
+            "MaintenanceDB": "ossdb",
+            "Username": "ossuser",
+            "PassFile": "/config/pgpass"
+          }
+        }
+      }
+  pgadmin-pgpass:
+    content: |
+      db:5432:*:ossuser:osspass
