@@ -88,7 +88,7 @@ services:
       # servers.json을 매번 덮어써서(선언적) 서버 목록을 유지
       PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
     ports:
-      - "5050:3000"
+      - "5050:80"
     depends_on:
       db:
         condition: service_healthy
